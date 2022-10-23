@@ -144,6 +144,17 @@
       </SubType>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="colour.h" />
+    <ClInclude Include="Hittable.h" />
+    <ClInclude Include="HittableList.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="ray.h" />
+    <ClInclude Include="rtweekend.h" />
+    <ClInclude Include="Sphere.h" />
+    <ClInclude Include="vec3.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
