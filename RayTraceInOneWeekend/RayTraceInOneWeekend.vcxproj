@@ -150,6 +150,10 @@
     <ClInclude Include="Hittable.h" />
     <ClInclude Include="HittableList.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="MultiThreadFunctions.h">
+      <SubType>
+      </SubType>
+    </ClInclude>
     <ClInclude Include="ray.h" />
     <ClInclude Include="rtweekend.h" />
     <ClInclude Include="Sphere.h" />
