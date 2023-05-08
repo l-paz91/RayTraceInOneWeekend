@@ -142,18 +142,11 @@ void render(
 	const int pMaxDepth,
 	const int pThreadNumber,
 	Camera pCamera, 
-	HittableList pWorld)
+	HittableList pWorld,
+	vector<vector<colour>>& pPixels)
 {
-	stringstream filename;
-	filename << "file" << pThreadNumber << ".ppm";
-	ofstream file(filename.str());
-
-	//file << "P3\n" << pChunkWidth << ' ' << pChunkHeight << "\n255\n";
-
-	const auto iw = pImageWidth - 1;
-	const auto ih = pImageHeight - 1;
-
-	cerr << "\rThread " << pThreadNumber << ": Starting";
+	const int iw = pImageWidth - 1;
+	const int ih = pImageHeight - 1;
 
 	const int minY = pStartPosY - pChunkHeight;
 	for (int j = pStartPosY - 1; j >= minY; --j)
@@ -169,11 +162,9 @@ void render(
 				Ray r = pCamera.getRay(u, v);
 				pixelColour += rayColour(r, pWorld, pMaxDepth);
 			}
-			writeColour(file, pixelColour, pSamplesPerPixel);
+			pPixels[j][i] = pixelColour;
 		}
 	}
-
-	cerr << "\rThread " << pThreadNumber << ": Finished";
 }
 
 // -----------------------------------------------------------------------------
@@ -189,33 +180,39 @@ void multithreadRender(
 	Camera pCamera,
 	HittableList pWorld)
 {
-	ofstream finalRender{ "finalRender.ppm" };
-	finalRender << "P3\n" << pImageWidth << ' ' << pImageHeight << "\n255\n";
+	// returns a uint representing the number of concurrent threads that can be supported
+	// by the hardware. It can return 0 if the number of hardware threads can't be
+	// determined so we add a check for that
+	const unsigned int numThreads = thread::hardware_concurrency() != 0
+		? thread::hardware_concurrency() : 4;
+	const int chunkHeight = pImageHeight / numThreads;
 
-	const auto iw = pImageWidth - 1;
-	const auto ih = pImageHeight - 1;
+	vector<vector<colour>> pixels(pImageHeight, vector<colour>(pImageWidth));
+	vector<thread> threads;
 
-	const int div = sqrt(MAX_NUM_THREADS);
-	const int chunkWidth = pImageWidth / 2;
-	const int chunkHeight = pImageHeight / 2;
+	for (uint32_t i = 0; i < numThreads; ++i)
+	{
+		int startY = pImageHeight - i * chunkHeight;
+		threads.emplace_back(render, 0, startY, pImageWidth, chunkHeight, pImageHeight, pImageWidth,
+			pSamplesPerPixel, pMaxDepth, i, pCamera, pWorld, ref(pixels));
+	}
 
-	thread t1{ render, 0, chunkHeight, chunkWidth, chunkHeight, pImageHeight, pImageWidth, pSamplesPerPixel, pMaxDepth, 1, pCamera, pWorld };
-	thread t2{ render, 0, chunkHeight*2, chunkWidth, chunkHeight, pImageHeight, pImageWidth, pSamplesPerPixel, pMaxDepth, 2, pCamera, pWorld };
-	thread t3{ render, chunkWidth, chunkHeight, chunkWidth, chunkHeight, pImageHeight, pImageWidth, pSamplesPerPixel, pMaxDepth, 3, pCamera, pWorld };
-	thread t4{ render, chunkWidth, chunkHeight*2, chunkWidth,chunkHeight, pImageHeight, pImageWidth, pSamplesPerPixel, pMaxDepth, 4, pCamera, pWorld };
+	for (thread& t : threads)
+	{
+		t.join();
+	}
 
-	t1.join();
-	t2.join();
-	t3.join();
-	t4.join();
+	// now stitch all the pixels together in one file
+	ofstream file("output.ppm");
+	file << "P3\n" << pImageWidth << ' ' << pImageHeight << "\n255\n";
 
-	// join the pictures together
-	ifstream file4{ "file4.ppm" };
-	ifstream file3{ "file3.ppm" };
-	ifstream file2{ "file2.ppm" };
-	ifstream file1{ "file1.ppm" };
-
-	finalRender << file2.rdbuf() << file4.rdbuf() << file1.rdbuf() << file3.rdbuf();
+	for (const auto& row : pixels)
+	{
+		for (const auto& pixel : row)
+		{
+			writeColour(file, pixel, pSamplesPerPixel);
+		}
+	}
 }
 
 // -----------------------------------------------------------------------------

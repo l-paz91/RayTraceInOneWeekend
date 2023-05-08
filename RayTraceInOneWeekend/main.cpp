@@ -28,9 +28,9 @@ int main()
 {
 	// image
 	const auto aspectRatio = 16.0 / 9.0;
-	const int image_width = 200;
+	const int image_width = 400;
 	const int image_height = static_cast<int>(image_width / aspectRatio);
-	const int samplesPerPixel = 50;
+	const int samplesPerPixel = 100;
 	const int maxDepth = 50;
 
 	// world
